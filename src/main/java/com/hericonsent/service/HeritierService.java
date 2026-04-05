@@ -1,0 +1,104 @@
+package com.hericonsent.service;
+
+import com.hericonsent.dto.AddHeritierRequest;
+import com.hericonsent.dto.HeritierResponse;
+import com.hericonsent.entity.Dossier;
+import com.hericonsent.entity.Heritier;
+import com.hericonsent.entity.Personne;
+import com.hericonsent.exception.ResourceNotFoundException;
+import com.hericonsent.repository.DossierRepository;
+import com.hericonsent.repository.HeritierRepository;
+import com.hericonsent.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class HeritierService {
+
+    private final HeritierRepository heritierRepository;
+    private final DossierRepository dossierRepository;
+    private final UserRepository userRepository;
+    private final AuditService auditService;
+
+    @Transactional
+    public HeritierResponse ajouter(UUID dossierId, AddHeritierRequest request) {
+        Dossier dossier = dossierRepository.findById(dossierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dossier introuvable : " + dossierId));
+
+        Personne personne = Personne.builder()
+                .nom(request.getNom())
+                .prenom(request.getPrenom())
+                .email(request.getEmail())
+                .telephone(request.getTelephone())
+                .dateNaissance(request.getDateNaissance())
+                .adresse(request.getAdresse())
+                .build();
+
+        Heritier heritier = Heritier.builder()
+                .dossier(dossier)
+                .personne(personne)
+                .part(request.getPart())
+                .role(request.getRole())
+                .statutContact("NON_CONTACTE")
+                .build();
+
+        heritier = heritierRepository.save(heritier);
+
+        String acteurEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        auditService.log("AJOUT_HERITIER", "HERITIER", heritier.getId(), null,
+                Map.of("dossier", dossierId.toString(),
+                        "heritier", personne.getNomComplet()));
+
+        log.info("Héritier {} ajouté au dossier {}", personne.getNomComplet(), dossierId);
+        return toResponse(heritier);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HeritierResponse> listerParDossier(UUID dossierId) {
+        return heritierRepository.findByDossierId(dossierId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void supprimer(UUID heritierId) {
+        Heritier h = heritierRepository.findById(heritierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Héritier introuvable"));
+        heritierRepository.delete(h);
+        auditService.log("SUPPRESSION_HERITIER", "HERITIER", heritierId, null, null);
+    }
+
+    @Transactional
+    public HeritierResponse mettreAJourStatutContact(UUID heritierId, String statut) {
+        Heritier h = heritierRepository.findById(heritierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Héritier introuvable"));
+        h.setStatutContact(statut);
+        h = heritierRepository.save(h);
+        return toResponse(h);
+    }
+
+    private HeritierResponse toResponse(Heritier h) {
+        return HeritierResponse.builder()
+                .id(h.getId())
+                .personneId(h.getPersonne().getId())
+                .nomComplet(h.getPersonne().getNomComplet())
+                .email(h.getPersonne().getEmail())
+                .telephone(h.getPersonne().getTelephone())
+                .part(h.getPart())
+                .role(h.getRole())
+                .statutContact(h.getStatutContact())
+                .identityVerified(h.getPersonne().isIdentityVerified())
+                .build();
+    }
+}

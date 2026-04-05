@@ -1,0 +1,104 @@
+version: "3.9"
+
+services:
+
+  # ============================================
+  # BASE DE DONNÉES PostgreSQL
+  # ============================================
+  db:
+    image: postgres:16-alpine
+    container_name: hericonsent-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hericonsent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # STOCKAGE OBJET (S3 compatible)
+  # ============================================
+  minio:
+    image: minio/minio:latest
+    container_name: hericonsent-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # API S3
+      - "9001:9001"   # Console web
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ============================================
+  # BACKEND SPRING BOOT
+  # ============================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hericonsent-backend
+    restart: unless-stopped
+    environment:
+      # Base de données
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: hericonsent
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      # JWT
+      JWT_SECRET: hericonsent-secret-key-minimum-256-bits-long-production-change-me
+      # MinIO
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: hericonsent
+      # Mail (configurer en production)
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      # CORS
+      CORS_ORIGINS: http://localhost:4200
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # MAIL (développement uniquement)
+  # ============================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: hericonsent-mail
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Interface web
+
+volumes:
+  postgres_data:
+  minio_data:
