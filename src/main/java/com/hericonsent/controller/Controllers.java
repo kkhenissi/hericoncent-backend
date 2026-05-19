@@ -60,6 +60,7 @@ class AuthController {
 class DossierController {
 
     private final DossierService dossierService;
+    private final FamilyTreeService familyTreeService;
 
     @GetMapping
     @Operation(summary = "Lister mes dossiers")
@@ -90,6 +91,51 @@ class DossierController {
             @PathVariable UUID id,
             @RequestParam String statut) {
         return ResponseEntity.ok(ApiResponse.ok(dossierService.changerStatut(id, statut)));
+    }
+
+    @GetMapping("/{dossierId}/family-tree")
+    @Operation(summary = "Récupérer les membres de la famille d'un dossier")
+    public ResponseEntity<ApiResponse<List<FamilyMemberResponse>>> getFamilyTree(
+            @PathVariable UUID dossierId) {
+        return ResponseEntity.ok(ApiResponse.ok(familyTreeService.getMembersByDossier(dossierId)));
+    }
+
+    @PostMapping("/{dossierId}/family-tree/members")
+    @Operation(summary = "Créer un nouveau membre de la famille pour un dossier")
+    public ResponseEntity<ApiResponse<FamilyMemberResponse>> createFamilyMember(
+            @PathVariable UUID dossierId,
+            @Valid @RequestBody CreateFamilyMemberRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Membre créé", familyTreeService.createMember(request)));
+    }
+
+    @PutMapping("/{dossierId}/family-tree/members/{memberId}")
+    @Operation(summary = "Mettre à jour un membre de la famille")
+    public ResponseEntity<ApiResponse<FamilyMemberResponse>> updateFamilyMember(
+            @PathVariable UUID dossierId,
+            @PathVariable UUID memberId,
+            @Valid @RequestBody UpdateFamilyMemberRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Membre mis à jour",
+                familyTreeService.updateMember(memberId, request)));
+    }
+
+    @DeleteMapping("/{dossierId}/family-tree/members/{memberId}")
+    @Operation(summary = "Supprimer un membre de la famille")
+    public ResponseEntity<ApiResponse<Void>> deleteFamilyMember(
+            @PathVariable UUID dossierId,
+            @PathVariable UUID memberId) {
+        familyTreeService.deleteMember(memberId);
+        return ResponseEntity.ok(ApiResponse.ok("Membre supprimé", null));
+    }
+
+    @PostMapping("/{dossierId}/family-tree/link-couple")
+    @Operation(summary = "Lier deux personnes comme couple")
+    public ResponseEntity<ApiResponse<Void>> linkCouple(
+            @PathVariable UUID dossierId,
+            @RequestParam UUID maleId,
+            @RequestParam UUID femaleId) {
+        familyTreeService.linkCouple(maleId, femaleId);
+        return ResponseEntity.ok(ApiResponse.ok("Couple créé", null));
     }
 }
 

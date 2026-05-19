@@ -8,6 +8,7 @@ import com.hericonsent.dto.UpdateFamilyMemberRequest;
 import com.hericonsent.entity.Personne;
 import com.hericonsent.exception.ResourceNotFoundException;
 import com.hericonsent.repository.PersonneRepository;
+import com.hericonsent.repository.HeritierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,23 @@ import java.util.stream.Collectors;
 public class FamilyTreeService {
 
     private final PersonneRepository personneRepository;
+    private final HeritierRepository heritierRepository;
     private final ObjectMapper objectMapper;
+
+    @Transactional(readOnly = true)
+    public List<FamilyMemberResponse> getMembersByDossier(UUID dossierId) {
+        try {
+            return heritierRepository.findByDossierId(dossierId)
+                    .stream()
+                    .map(heritier -> heritier.getPersonne())
+                    .filter(personne -> personne != null)
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error retrieving family tree for dossier {}: {}", dossierId, e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
 
     @Transactional(readOnly = true)
     public List<FamilyMemberResponse> getAllMembers() {
@@ -121,9 +138,25 @@ public class FamilyTreeService {
     public void deleteMember(UUID id) {
         Personne personne = personneRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Membre de la famille introuvable : " + id));
-        
+
         personneRepository.delete(personne);
         log.info("Membre de la famille {} supprimé", id);
+    }
+
+    @Transactional
+    public void linkCouple(UUID maleId, UUID femaleId) {
+        Personne male = personneRepository.findById(maleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Homme introuvable : " + maleId));
+        Personne female = personneRepository.findById(femaleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Femme introuvable : " + femaleId));
+
+        male.setSpouseId(femaleId);
+        female.setSpouseId(maleId);
+
+        personneRepository.save(male);
+        personneRepository.save(female);
+
+        log.info("Couple créé : {} <-> {}", male.getNomComplet(), female.getNomComplet());
     }
 
     @Transactional(readOnly = true)
@@ -181,7 +214,7 @@ public class FamilyTreeService {
 
     private FamilyMemberResponse toResponse(Personne personne) {
         List<UUID> parentIds = new ArrayList<>();
-        
+
         if (personne.getParentIds() != null && !personne.getParentIds().isEmpty()) {
             try {
                 parentIds = objectMapper.readValue(
@@ -189,17 +222,21 @@ public class FamilyTreeService {
                     new TypeReference<List<UUID>>() {}
                 );
             } catch (Exception e) {
-                log.error("Error deserializing parent IDs for personne {}", personne.getId(), e);
+                log.debug("Error deserializing parent IDs for personne {}: {}", personne.getId(), e.getMessage());
             }
         }
 
+        // Use default values if fields are null
+        Integer birthYear = personne.getBirthYear() != null ? personne.getBirthYear() : 1900;
+        String gender = personne.getGender() != null ? personne.getGender() : "male";
+
         return FamilyMemberResponse.builder()
                 .id(personne.getId())
-                .firstName(personne.getPrenom())
-                .lastName(personne.getNom())
-                .birthYear(personne.getBirthYear())
+                .firstName(personne.getPrenom() != null ? personne.getPrenom() : "")
+                .lastName(personne.getNom() != null ? personne.getNom() : "")
+                .birthYear(birthYear)
                 .deathYear(personne.getDeathYear())
-                .gender(personne.getGender())
+                .gender(gender)
                 .profession(personne.getProfession())
                 .city(personne.getCity())
                 .spouseId(personne.getSpouseId())
