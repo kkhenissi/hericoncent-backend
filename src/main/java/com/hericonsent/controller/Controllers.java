@@ -63,8 +63,9 @@ class DossierController {
 
     @GetMapping
     @Operation(summary = "Lister mes dossiers")
-    public ResponseEntity<ApiResponse<List<DossierResponse>>> lister() {
-        return ResponseEntity.ok(ApiResponse.ok(dossierService.listerTous()));
+    public ResponseEntity<ApiResponse<List<DossierResponse>>> lister(
+            @RequestParam(required = false) UUID notaireId) {
+        return ResponseEntity.ok(ApiResponse.ok(dossierService.listerTous(notaireId)));
     }
 
     @PostMapping
@@ -199,5 +200,74 @@ class ConsentementController {
             @Valid @RequestBody RepondreConsentementRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
                 consentementService.repondreParToken(token, request)));
+    }
+}
+
+// ============================================
+// FAMILY TREE CONTROLLER
+// ============================================
+@RestController
+@RequestMapping("/family-tree")
+@Tag(name = "Arbre Généalogique", description = "Gestion de l'arbre généalogique de la famille")
+@SecurityRequirement(name = "bearerAuth")
+@RequiredArgsConstructor
+class FamilyTreeController {
+
+    private final FamilyTreeService familyTreeService;
+
+    @GetMapping
+    @Operation(summary = "Récupérer tous les membres de la famille")
+    public ResponseEntity<ApiResponse<List<FamilyMemberResponse>>> getAllMembers() {
+        return ResponseEntity.ok(ApiResponse.ok(familyTreeService.getAllMembers()));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Récupérer un membre de la famille par ID")
+    public ResponseEntity<ApiResponse<FamilyMemberResponse>> getMemberById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(familyTreeService.getMemberById(id)));
+    }
+
+    @PostMapping
+    @Operation(summary = "Créer un nouveau membre de la famille")
+    public ResponseEntity<ApiResponse<FamilyMemberResponse>> createMember(
+            @Valid @RequestBody CreateFamilyMemberRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Membre créé", familyTreeService.createMember(request)));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Mettre à jour un membre de la famille")
+    public ResponseEntity<ApiResponse<FamilyMemberResponse>> updateMember(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateFamilyMemberRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Membre mis à jour", 
+                familyTreeService.updateMember(id, request)));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Supprimer un membre de la famille")
+    public ResponseEntity<ApiResponse<Void>> deleteMember(@PathVariable UUID id) {
+        familyTreeService.deleteMember(id);
+        return ResponseEntity.ok(ApiResponse.ok("Membre supprimé", null));
+    }
+
+    @GetMapping("/{parentId}/children")
+    @Operation(summary = "Récupérer les enfants d'un membre")
+    public ResponseEntity<ApiResponse<List<FamilyMemberResponse>>> getChildren(
+            @PathVariable UUID parentId) {
+        return ResponseEntity.ok(ApiResponse.ok(familyTreeService.getChildren(parentId)));
+    }
+
+    @GetMapping("/roots")
+    @Operation(summary = "Récupérer les racines de l'arbre (membres sans parents)")
+    public ResponseEntity<ApiResponse<List<FamilyMemberResponse>>> getRoots() {
+        return ResponseEntity.ok(ApiResponse.ok(familyTreeService.getRoots()));
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Chercher un membre de la famille")
+    public ResponseEntity<ApiResponse<List<FamilyMemberResponse>>> searchMembers(
+            @RequestParam String query) {
+        return ResponseEntity.ok(ApiResponse.ok(familyTreeService.searchMembers(query)));
     }
 }

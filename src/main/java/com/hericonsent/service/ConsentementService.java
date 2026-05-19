@@ -1,5 +1,6 @@
 package com.hericonsent.service;
 
+import com.hericonsent.dto.ReponseDetailResponse;
 import com.hericonsent.dto.*;
 import com.hericonsent.entity.*;
 import com.hericonsent.exception.ResourceNotFoundException;

@@ -28,6 +28,7 @@ public class DossierService {
     @Transactional
     public DossierResponse creer(CreateDossierRequest request) {
         User currentUser = getCurrentUser();
+        log.info("CreateDossierRequest reçue - notaireId: {}", request.getNotaireId());
 
         String reference = genererReference();
 
@@ -43,12 +44,17 @@ public class DossierService {
                 .build();
 
         if (request.getNotaireId() != null) {
+            log.info("Assignation du notaire: {}", request.getNotaireId());
             User notaire = userRepository.findById(request.getNotaireId())
                     .orElseThrow(() -> new ResourceNotFoundException("Notaire introuvable"));
             dossier.setNotaire(notaire);
+            log.info("Notaire assigné au dossier: {}", notaire.getEmail());
+        } else {
+            log.info("Pas de notaireId fourni dans la requête");
         }
 
         dossier = dossierRepository.save(dossier);
+        log.info("Dossier sauvegardé avec notaireId: {}", dossier.getNotaire() != null ? dossier.getNotaire().getId() : "NULL");
 
         auditService.log("CREATION_DOSSIER", "DOSSIER", dossier.getId(),
                 currentUser.getId(), Map.of("reference", reference));
@@ -58,12 +64,14 @@ public class DossierService {
     }
 
     @Transactional(readOnly = true)
-    public List<DossierResponse> listerTous() {
+    public List<DossierResponse> listerTous(UUID notaireId) {
         User currentUser = getCurrentUser();
         List<Dossier> dossiers;
 
         if (currentUser.getRole().equals("ROLE_ADMIN")) {
-            dossiers = dossierRepository.findAll();
+            dossiers = notaireId != null
+                    ? dossierRepository.findByNotaireId(notaireId)
+                    : dossierRepository.findAll();
         } else if (currentUser.getRole().equals("ROLE_NOTAIRE")) {
             dossiers = dossierRepository.findByNotaireId(currentUser.getId());
         } else {

@@ -18,6 +18,10 @@ public class Dossier {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    public UUID getId() {
+        return id;
+    }
+
     @Column(unique = true, nullable = false)
     private String reference;
 

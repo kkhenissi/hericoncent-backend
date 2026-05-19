@@ -46,7 +46,7 @@ docker-compose up --build
 
 ```bash
 # Lancer seulement la base + minio
-docker-compose up db minio mailhog
+/*
 
 # Lancer Spring Boot
 ./mvnw spring-boot:run
@@ -149,9 +149,9 @@ Emails envoyés avec lien sécurisé
 Héritier clique le lien → répond ACCEPTE/REJETE
          ↓
 Statut recalculé automatiquement :
-  - Toutes parts ≥ seuil = VALIDE ✅
-  - Au moins 1 REJETE       = REJETE ❌
-  - Partiellement répondu   = PARTIEL 🔄
+  - Toutes parts ≥ seuil = VALIDE 
+  - Au moins 1 REJETE       = REJETE 
+  - Partiellement répondu   = PARTIEL 
          ↓
 Si VALIDE → notification à tous les héritiers
 ```

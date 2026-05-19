@@ -1,6 +1,6 @@
 package com.hericonsent.config;
 
-import com.hericonsent.repository.Repositories;
+
 import com.hericonsent.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -34,13 +34,20 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final UserDetailsService userDetailsService;
 
-    @Value("${app.cors.allowed-origins}")
+    @Value("${app.cors.allowed-origins:http://localhost:4200}")
     private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(csrf -> csrf
+                    .ignoringRequestMatchers("/api/h2-console/**")
+            )
+            .headers(headers -> headers
+                    .frameOptions(frame -> frame.disable())
+            )
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -50,6 +57,7 @@ public class SecurityConfig {
                     "/auth/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
+                    "/h2-console/**",
                     "/swagger-ui.html",
                     "/consentements/repondre/token/**"  // lien public par token
                 ).permitAll()
@@ -59,17 +67,13 @@ public class SecurityConfig {
                 // Tout le reste : authentifié
                 .anyRequest().authenticated()
             )
-            .authenticationProvider(authenticationProvider(userDetailsService(null)))
+            .authenticationProvider(authenticationProvider(userDetailsService))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(com.hericonsent.repository.UserRepository userRepo) {
-        return username -> userRepo.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé : " + username));
-    }
+
 
     @Bean
     public AuthenticationProvider authenticationProvider(UserDetailsService uds) {

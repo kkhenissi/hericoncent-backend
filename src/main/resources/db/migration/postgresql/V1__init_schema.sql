@@ -1,12 +1,10 @@
 -- ============================================
--- HériConsent - Migration V1 : Schéma initial
+-- HériConsent - Migration V1 : Schéma initial (PostgreSQL)
 -- ============================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ============================================
 -- USERS (comptes applicatifs)
--- ============================================
 CREATE TABLE users (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     email       TEXT        UNIQUE NOT NULL,
@@ -17,9 +15,7 @@ CREATE TABLE users (
     updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- PERSONNES (profil physique)
--- ============================================
 CREATE TABLE personnes (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID        REFERENCES users(id) ON DELETE SET NULL,
@@ -34,9 +30,7 @@ CREATE TABLE personnes (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- DOSSIERS (biens en indivision)
--- ============================================
 CREATE TABLE dossiers (
     id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     reference           TEXT        UNIQUE NOT NULL,
@@ -53,9 +47,7 @@ CREATE TABLE dossiers (
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- HERITIERS (relation personne <-> dossier)
--- ============================================
 CREATE TABLE heritiers (
     id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     dossier_id          UUID        NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
@@ -71,9 +63,7 @@ CREATE TABLE heritiers (
     UNIQUE(dossier_id, personne_id)
 );
 
--- ============================================
 -- RELATIONS FAMILIALES (arbre généalogique)
--- ============================================
 CREATE TABLE relations_familiales (
     id          UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
     personne_id UUID    NOT NULL REFERENCES personnes(id) ON DELETE CASCADE,
@@ -83,9 +73,7 @@ CREATE TABLE relations_familiales (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- DOCUMENTS
--- ============================================
 CREATE TABLE documents (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     dossier_id  UUID        NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
@@ -100,9 +88,7 @@ CREATE TABLE documents (
     uploaded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- CONSENTEMENTS (demandes de vote/décision)
--- ============================================
 CREATE TABLE consentements (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     dossier_id      UUID        NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
@@ -120,9 +106,7 @@ CREATE TABLE consentements (
     updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- REPONSES HERITIERS (vote individuel)
--- ============================================
 CREATE TABLE consentement_reponses (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     consentement_id UUID        NOT NULL REFERENCES consentements(id) ON DELETE CASCADE,
@@ -138,9 +122,7 @@ CREATE TABLE consentement_reponses (
     UNIQUE(consentement_id, heritier_id)
 );
 
--- ============================================
 -- SIGNATURES ELECTRONIQUES
--- ============================================
 CREATE TABLE signatures (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     reponse_id      UUID        REFERENCES consentement_reponses(id),
@@ -154,9 +136,7 @@ CREATE TABLE signatures (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- MANDATS (procurations)
--- ============================================
 CREATE TABLE mandats (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     dossier_id      UUID        NOT NULL REFERENCES dossiers(id),
@@ -169,9 +149,7 @@ CREATE TABLE mandats (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- AUDIT LOGS (immuable)
--- ============================================
 CREATE TABLE audit_logs (
     id          BIGSERIAL   PRIMARY KEY,
     action      TEXT        NOT NULL,
@@ -183,9 +161,7 @@ CREATE TABLE audit_logs (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- NOTIFICATIONS
--- ============================================
 CREATE TABLE notifications (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID        REFERENCES users(id),
@@ -196,9 +172,7 @@ CREATE TABLE notifications (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
 -- INDEXES
--- ============================================
 CREATE INDEX idx_dossiers_statut       ON dossiers(statut);
 CREATE INDEX idx_dossiers_reference    ON dossiers(reference);
 CREATE INDEX idx_heritiers_dossier     ON heritiers(dossier_id);
@@ -211,11 +185,9 @@ CREATE INDEX idx_audit_logs_entite     ON audit_logs(entite_type, entite_id);
 CREATE INDEX idx_audit_logs_acteur     ON audit_logs(acteur_id);
 CREATE INDEX idx_personnes_user        ON personnes(user_id);
 
--- ============================================
 -- DONNEES INITIALES
--- ============================================
 INSERT INTO users (id, email, password, role) VALUES
-(gen_random_uuid(), 'admin@hericonsent.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lh5.', 'ROLE_ADMIN'),
+(gen_random_uuid(), 'admin@hericonsent.fr', '$2b$12$3NNOkZ9fmEICShHs3rdTF.E4iL1t2kt6avMi/wn4RrhtOAEfkqGie', 'ROLE_ADMIN'),
 -- password: admin123
-(gen_random_uuid(), 'notaire@hericonsent.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lh5.', 'ROLE_NOTAIRE');
+(gen_random_uuid(), 'notaire@hericonsent.fr', '$2b$12$3NNOkZ9fmEICShHs3rdTF.E4iL1t2kt6avMi/wn4RrhtOAEfkqGie', 'ROLE_NOTAIRE');
 -- password: admin123
