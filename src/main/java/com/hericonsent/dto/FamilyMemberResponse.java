@@ -20,4 +20,5 @@ public class FamilyMemberResponse {
     private UUID spouseId;
     private List<UUID> parentIds;
     private String photoInitials;
+    private boolean validated;
 }

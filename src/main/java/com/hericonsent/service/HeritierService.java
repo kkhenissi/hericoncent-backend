@@ -49,6 +49,7 @@ public class HeritierService {
                 .personne(personne)
                 .part(request.getPart())
                 .role(request.getRole())
+                .validated(request.isValidated())
                 .statutContact("NON_CONTACTE")
                 .build();
 
@@ -97,6 +98,7 @@ public class HeritierService {
                 .telephone(h.getPersonne().getTelephone())
                 .part(h.getPart())
                 .role(h.getRole())
+                .validated(h.isValidated())
                 .statutContact(h.getStatutContact())
                 .identityVerified(h.getPersonne().isIdentityVerified())
                 .build();

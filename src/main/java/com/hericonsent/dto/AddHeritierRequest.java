@@ -21,5 +21,6 @@ public class AddHeritierRequest {
     @DecimalMin("0.0")
     @DecimalMax("1.0")
     private BigDecimal part;
+    private boolean validated = false;
     private String role = "HERITIER";
 }

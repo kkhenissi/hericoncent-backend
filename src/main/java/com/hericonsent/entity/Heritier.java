@@ -30,6 +30,9 @@ public class Heritier {
     @Column(nullable = false)
     private String role = "HERITIER";
 
+    @Column(nullable = false)
+    private boolean validated = false;
+
     @Column(name = "est_representant")
     private boolean estRepresentant = false;
 

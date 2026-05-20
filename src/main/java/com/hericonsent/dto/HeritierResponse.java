@@ -16,6 +16,7 @@ public class HeritierResponse {
     private String telephone;
     private BigDecimal part;
     private String role;
+    private boolean validated;
     private String statutContact;
     private boolean identityVerified;
     private String reponseConsentement;

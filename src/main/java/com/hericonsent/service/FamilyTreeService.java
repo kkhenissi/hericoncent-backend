@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hericonsent.dto.CreateFamilyMemberRequest;
 import com.hericonsent.dto.FamilyMemberResponse;
 import com.hericonsent.dto.UpdateFamilyMemberRequest;
+import com.hericonsent.entity.Heritier;
 import com.hericonsent.entity.Personne;
 import com.hericonsent.exception.ResourceNotFoundException;
 import com.hericonsent.repository.PersonneRepository;
@@ -33,8 +34,7 @@ public class FamilyTreeService {
         try {
             return heritierRepository.findByDossierId(dossierId)
                     .stream()
-                    .map(heritier -> heritier.getPersonne())
-                    .filter(personne -> personne != null)
+                    .filter(heritier -> heritier.getPersonne() != null)
                     .map(this::toResponse)
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -242,6 +242,14 @@ public class FamilyTreeService {
                 .spouseId(personne.getSpouseId())
                 .parentIds(parentIds)
                 .photoInitials(personne.getPhotoInitials())
+                .validated(false)
                 .build();
+    }
+
+    private FamilyMemberResponse toResponse(Heritier heritier) {
+        Personne personne = heritier.getPersonne();
+        FamilyMemberResponse response = toResponse(personne);
+        response.setValidated(heritier.isValidated());
+        return response;
     }
 }
