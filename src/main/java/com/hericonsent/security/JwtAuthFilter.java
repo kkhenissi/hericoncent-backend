@@ -34,8 +34,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractToken(request);
+        String uri = request.getRequestURI();
 
+        // Routes publiques : pas de validation JWT
+        if (uri.contains("/auth/") || uri.contains("/consentements/repondre/token/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = extractToken(request);
         if (token != null && jwtService.isTokenValid(token)) {
             String email = jwtService.extractEmail(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);

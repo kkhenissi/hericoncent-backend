@@ -60,8 +60,12 @@ public class ConsentementService {
 
         consentement = consentementRepository.save(consentement);
 
-        // Créer une réponse EN_ATTENTE pour chaque héritier du dossier
-        List<Heritier> heritiers = heritierRepository.findByDossierId(dossierId);
+        // Créer une réponse EN_ATTENTE uniquement pour les membres marqués comme héritiers
+        // (case cochée dans l'arbre généalogique, et non décédés)
+        List<Heritier> heritiers = heritierRepository.findByDossierId(dossierId).stream()
+                .filter(Heritier::isHeir)
+                .filter(h -> h.getPersonne() != null && h.getPersonne().getDeathYear() == null)
+                .collect(Collectors.toList());
         List<ConsentementReponse> reponses = new ArrayList<>();
 
         for (Heritier h : heritiers) {

@@ -33,6 +33,9 @@ public class Heritier {
     @Column(nullable = false)
     private boolean validated = false;
 
+    @Column(name = "is_heir", nullable = false)
+    private boolean isHeir = false;
+
     @Column(name = "est_representant")
     private boolean estRepresentant = false;
 

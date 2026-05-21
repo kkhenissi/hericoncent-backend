@@ -116,7 +116,7 @@ class DossierController {
             @PathVariable UUID memberId,
             @Valid @RequestBody UpdateFamilyMemberRequest request) {
         return ResponseEntity.ok(ApiResponse.ok("Membre mis à jour",
-                familyTreeService.updateMember(memberId, request)));
+                familyTreeService.updateMember(dossierId, memberId, request)));
     }
 
     @DeleteMapping("/{dossierId}/family-tree/members/{memberId}")
@@ -165,6 +165,17 @@ class HeritierController {
             @Valid @RequestBody AddHeritierRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Héritier ajouté", heritierService.ajouter(dossierId, request)));
+    }
+
+    @PatchMapping("/{heritierId}")
+    @Operation(summary = "Mettre à jour l'email ou la part d'un héritier")
+    @PreAuthorize("hasAnyRole('NOTAIRE', 'ADMIN')")
+    public ResponseEntity<ApiResponse<HeritierResponse>> mettreAJour(
+            @PathVariable UUID dossierId,
+            @PathVariable UUID heritierId,
+            @Valid @RequestBody UpdateHeritierRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Héritier mis à jour",
+                heritierService.mettreAJour(heritierId, request)));
     }
 
     @DeleteMapping("/{heritierId}")

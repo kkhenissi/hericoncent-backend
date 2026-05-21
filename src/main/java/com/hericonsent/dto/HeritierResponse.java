@@ -1,5 +1,6 @@
 package com.hericonsent.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,6 +18,10 @@ public class HeritierResponse {
     private BigDecimal part;
     private String role;
     private boolean validated;
+
+    @JsonProperty("isHeir")
+    private boolean isHeir;
+
     private String statutContact;
     private boolean identityVerified;
     private String reponseConsentement;

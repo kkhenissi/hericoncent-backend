@@ -11,6 +11,8 @@ public class UpdateFamilyMemberRequest {
 
     private String lastName;
 
+    private String email;
+
     private Integer birthYear;
 
     private Integer deathYear;
@@ -26,4 +28,6 @@ public class UpdateFamilyMemberRequest {
     private List<UUID> parentIds;
 
     private String photoInitials;
+
+    private Boolean isHeir;
 }

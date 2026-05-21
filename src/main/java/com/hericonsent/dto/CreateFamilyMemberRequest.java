@@ -15,6 +15,8 @@ public class CreateFamilyMemberRequest {
     @NotBlank
     private String lastName;
 
+    private String email;
+
     @NotNull
     private Integer birthYear;
 

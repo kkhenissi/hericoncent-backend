@@ -2,6 +2,7 @@ package com.hericonsent.service;
 
 import com.hericonsent.dto.AddHeritierRequest;
 import com.hericonsent.dto.HeritierResponse;
+import com.hericonsent.dto.UpdateHeritierRequest;
 import com.hericonsent.entity.Dossier;
 import com.hericonsent.entity.Heritier;
 import com.hericonsent.entity.Personne;
@@ -42,6 +43,7 @@ public class HeritierService {
                 .telephone(request.getTelephone())
                 .dateNaissance(request.getDateNaissance())
                 .adresse(request.getAdresse())
+                .gender(request.getGender())
                 .build();
 
         Heritier heritier = Heritier.builder()
@@ -50,6 +52,7 @@ public class HeritierService {
                 .part(request.getPart())
                 .role(request.getRole())
                 .validated(request.isValidated())
+                .isHeir(request.isHeir())
                 .statutContact("NON_CONTACTE")
                 .build();
 
@@ -70,6 +73,24 @@ public class HeritierService {
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public HeritierResponse mettreAJour(UUID heritierId, UpdateHeritierRequest request) {
+        Heritier h = heritierRepository.findById(heritierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Héritier introuvable"));
+
+        if (request.getEmail() != null) {
+            h.getPersonne().setEmail(request.getEmail());
+        }
+        if (request.getPart() != null) {
+            h.setPart(request.getPart());
+        }
+
+        h = heritierRepository.save(h);
+        auditService.log("MAJ_HERITIER", "HERITIER", heritierId, null,
+                Map.of("heritier", h.getPersonne().getNomComplet()));
+        return toResponse(h);
     }
 
     @Transactional
@@ -99,6 +120,7 @@ public class HeritierService {
                 .part(h.getPart())
                 .role(h.getRole())
                 .validated(h.isValidated())
+                .isHeir(h.isHeir())
                 .statutContact(h.getStatutContact())
                 .identityVerified(h.getPersonne().isIdentityVerified())
                 .build();

@@ -1,5 +1,6 @@
 package com.hericonsent.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,6 +13,7 @@ public class FamilyMemberResponse {
     private UUID id;
     private String firstName;
     private String lastName;
+    private String email;
     private Integer birthYear;
     private Integer deathYear;
     private String gender; // "male" or "female"
@@ -21,4 +23,7 @@ public class FamilyMemberResponse {
     private List<UUID> parentIds;
     private String photoInitials;
     private boolean validated;
+
+    @JsonProperty("isHeir")
+    private boolean isHeir;
 }

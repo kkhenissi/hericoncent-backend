@@ -63,6 +63,7 @@ public class FamilyTreeService {
         Personne personne = Personne.builder()
                 .nom(request.getLastName())
                 .prenom(request.getFirstName())
+                .email(request.getEmail())
                 .gender(request.getGender())
                 .birthYear(request.getBirthYear())
                 .deathYear(request.getDeathYear())
@@ -90,6 +91,24 @@ public class FamilyTreeService {
     }
 
     @Transactional
+    public FamilyMemberResponse updateMember(UUID dossierId, UUID id, UpdateFamilyMemberRequest request) {
+        FamilyMemberResponse response = updateMember(id, request);
+
+        if (dossierId != null && request.getIsHeir() != null) {
+            heritierRepository.findByDossierId(dossierId).stream()
+                    .filter(h -> h.getPersonne() != null && id.equals(h.getPersonne().getId()))
+                    .findFirst()
+                    .ifPresent(h -> {
+                        h.setHeir(request.getIsHeir());
+                        heritierRepository.save(h);
+                        response.setHeir(request.getIsHeir());
+                    });
+        }
+
+        return response;
+    }
+
+    @Transactional
     public FamilyMemberResponse updateMember(UUID id, UpdateFamilyMemberRequest request) {
         Personne personne = personneRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Membre de la famille introuvable : " + id));
@@ -102,6 +121,9 @@ public class FamilyTreeService {
         }
         if (request.getGender() != null) {
             personne.setGender(request.getGender());
+        }
+        if (request.getEmail() != null) {
+            personne.setEmail(request.getEmail());
         }
         if (request.getBirthYear() != null) {
             personne.setBirthYear(request.getBirthYear());
@@ -234,6 +256,7 @@ public class FamilyTreeService {
                 .id(personne.getId())
                 .firstName(personne.getPrenom() != null ? personne.getPrenom() : "")
                 .lastName(personne.getNom() != null ? personne.getNom() : "")
+                .email(personne.getEmail())
                 .birthYear(birthYear)
                 .deathYear(personne.getDeathYear())
                 .gender(gender)
@@ -243,6 +266,7 @@ public class FamilyTreeService {
                 .parentIds(parentIds)
                 .photoInitials(personne.getPhotoInitials())
                 .validated(false)
+                .isHeir(false)
                 .build();
     }
 
@@ -250,6 +274,7 @@ public class FamilyTreeService {
         Personne personne = heritier.getPersonne();
         FamilyMemberResponse response = toResponse(personne);
         response.setValidated(heritier.isValidated());
+        response.setHeir(heritier.isHeir());
         return response;
     }
 }

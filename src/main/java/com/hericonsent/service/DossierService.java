@@ -165,6 +165,8 @@ public class DossierService {
                 .telephone(h.getPersonne().getTelephone())
                 .part(h.getPart())
                 .role(h.getRole())
+                .validated(h.isValidated())
+                .isHeir(h.isHeir())
                 .statutContact(h.getStatutContact())
                 .identityVerified(h.getPersonne().isIdentityVerified())
                 .build();
