@@ -33,7 +33,7 @@ public class NotificationService {
     public void notifierNouveauConsentement(String email, String nomHeritier,
                                              String titreDossier, String token,
                                              String baseUrl) {
-        String lien = baseUrl + "/consentement/repondre?token=" + token;
+        String lien = baseUrl + "/consentements/repondre?token=" + token;
         String corps = String.format("""
                 Bonjour %s,
 
@@ -73,7 +73,7 @@ public class NotificationService {
     @Async
     public void notifierRelance(String email, String nomHeritier,
                                  String titreDossier, String token, String baseUrl) {
-        String lien = baseUrl + "/consentement/repondre?token=" + token;
+        String lien = baseUrl + "/consentements/repondre?token=" + token;
         String corps = String.format("""
                 Bonjour %s,
 

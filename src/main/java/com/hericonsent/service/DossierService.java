@@ -10,6 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -173,14 +175,41 @@ public class DossierService {
     }
 
     private ConsentementResponse consentementToResponse(Consentement c) {
+        List<ConsentementReponse> reponses = c.getReponses() != null ? c.getReponses() : List.of();
+        int total   = reponses.size();
+        int accepte = (int) reponses.stream().filter(r -> "ACCEPTE".equals(r.getReponse())).count();
+        int rejete  = (int) reponses.stream().filter(r -> "REJETE".equals(r.getReponse())).count();
+        int attente = (int) reponses.stream().filter(r -> "EN_ATTENTE".equals(r.getReponse())).count();
+        double progress = total > 0 ? ((double)(total - attente) / total) * 100 : 0;
+
+        List<ReponseDetailResponse> details = reponses.stream()
+                .map(r -> ReponseDetailResponse.builder()
+                        .id(r.getId())
+                        .heritierId(r.getHeritier().getId())
+                        .heritierNom(r.getHeritier().getPersonne().getNomComplet())
+                        .reponse(r.getReponse())
+                        .commentaire(r.getCommentaire())
+                        .reponduLe(r.getReponduLe())
+                        .signe(r.getSignatureId() != null)
+                        .build())
+                .collect(Collectors.toList());
+
         return ConsentementResponse.builder()
                 .id(c.getId())
                 .titre(c.getTitre())
+                .description(c.getDescription())
                 .typeAction(c.getTypeAction())
                 .statut(c.getStatut())
                 .seuilAccord(c.getSeuilAccord())
                 .expireLe(c.getExpireLe())
+                .totalHeritiers(total)
+                .reponsesAcceptees(accepte)
+                .reponsesRejetees(rejete)
+                .reponsesEnAttente(attente)
+                .progressPercent(BigDecimal.valueOf(progress)
+                        .setScale(1, RoundingMode.HALF_UP).doubleValue())
                 .createdAt(c.getCreatedAt())
+                .reponses(details)
                 .build();
     }
 

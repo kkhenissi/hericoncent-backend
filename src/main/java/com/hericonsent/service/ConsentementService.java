@@ -159,6 +159,53 @@ public class ConsentementService {
     }
 
     // ============================================
+    // INFOS PUBLIQUES PAR TOKEN (lien email)
+    // ============================================
+    @Transactional(readOnly = true)
+    public ConsentementResponse getByToken(String token) {
+        ConsentementReponse reponse = reponseRepository.findByTokenAcces(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Lien de consentement invalide"));
+
+        if (reponse.getTokenExpireLe() != null
+                && reponse.getTokenExpireLe().isBefore(OffsetDateTime.now())) {
+            throw new IllegalStateException("Ce lien de consentement a expiré");
+        }
+
+        Consentement consentement = reponse.getConsentement();
+        List<ConsentementReponse> toutes = reponseRepository.findByConsentementId(consentement.getId());
+
+        int total   = toutes.size();
+        int accepte = (int) toutes.stream().filter(r -> "ACCEPTE".equals(r.getReponse())).count();
+        int rejete  = (int) toutes.stream().filter(r -> "REJETE".equals(r.getReponse())).count();
+        int attente = (int) toutes.stream().filter(r -> "EN_ATTENTE".equals(r.getReponse())).count();
+        double progress = total > 0 ? ((double)(total - attente) / total) * 100 : 0;
+
+        boolean dejaRepondu = reponse.getReponduLe() != null;
+
+        return ConsentementResponse.builder()
+                .id(consentement.getId())
+                .titre(consentement.getTitre())
+                .description(consentement.getDescription())
+                .typeAction(consentement.getTypeAction())
+                .statut(consentement.getStatut())
+                .seuilAccord(consentement.getSeuilAccord())
+                .expireLe(consentement.getExpireLe())
+                .totalHeritiers(total)
+                .reponsesAcceptees(accepte)
+                .reponsesRejetees(rejete)
+                .reponsesEnAttente(attente)
+                .progressPercent(BigDecimal.valueOf(progress)
+                        .setScale(1, RoundingMode.HALF_UP).doubleValue())
+                .createdAt(consentement.getCreatedAt())
+                .dejaRepondu(dejaRepondu)
+                .reponseActuelle(dejaRepondu ? reponse.getReponse() : null)
+                .valeurEstimee(consentement.getDossier().getValeurEstimee())
+                .partHeritier(reponse.getHeritier().getPart())
+                .reponses(null)
+                .build();
+    }
+
+    // ============================================
     // RÉPONDRE EN ÉTANT CONNECTÉ
     // ============================================
     @Transactional

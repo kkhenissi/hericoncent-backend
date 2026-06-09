@@ -34,3 +34,5 @@ build/
 .vscode/
 # Ignorer le dossier de volume postgres
 postgres_data/
+# Fichiers H2 (base de données locale)
+data/

@@ -25,4 +25,8 @@ public class ConsentementResponse {
     private double progressPercent;
     private OffsetDateTime createdAt;
     private List<ReponseDetailResponse> reponses;
+    private Boolean dejaRepondu;        // non-null uniquement sur GET /repondre/token/{token}
+    private String reponseActuelle;     // ACCEPTE / REJETE / EN_ATTENTE si déjà répondu
+    private BigDecimal valeurEstimee;   // valeur estimée du bien (peut être null)
+    private BigDecimal partHeritier;    // part de cet héritier (0.0 – 1.0)
 }

@@ -249,7 +249,15 @@ class ConsentementController {
         return ResponseEntity.ok(ApiResponse.ok("Relances envoyées", null));
     }
 
-    // Route publique (accès par token)
+    // Routes publiques (accès par token — sans connexion)
+    @GetMapping("/consentements/repondre/token/{token}")
+    @Operation(summary = "Consulter un consentement via lien sécurisé (sans connexion)")
+    public ResponseEntity<ApiResponse<ConsentementResponse>> getByToken(
+            @PathVariable String token) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                consentementService.getByToken(token)));
+    }
+
     @PostMapping("/consentements/repondre/token/{token}")
     @Operation(summary = "Répondre via lien sécurisé (sans connexion)")
     public ResponseEntity<ApiResponse<ConsentementResponse>> repondreParToken(
