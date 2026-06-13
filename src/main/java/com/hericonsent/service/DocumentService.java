@@ -42,6 +42,10 @@ public class DocumentService {
         Dossier dossier = dossierRepository.findById(dossierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dossier introuvable : " + dossierId));
 
+        if ("FERME".equals(dossier.getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         String originalName = StringUtils.cleanPath(
                 file.getOriginalFilename() != null ? file.getOriginalFilename() : "document");
         String ext = originalName.contains(".")
@@ -99,6 +103,10 @@ public class DocumentService {
     public void supprimer(UUID documentId) throws IOException {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Document introuvable : " + documentId));
+
+        if ("FERME".equals(document.getDossier().getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
 
         storageService.delete(document.getS3Key());
         documentRepository.delete(document);

@@ -45,6 +45,10 @@ public class ConsentementService {
         Dossier dossier = dossierRepository.findById(dossierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dossier introuvable : " + dossierId));
 
+        if ("FERME".equals(dossier.getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         User currentUser = getCurrentUser();
 
         Consentement consentement = Consentement.builder()
@@ -133,6 +137,10 @@ public class ConsentementService {
             throw new IllegalStateException("Ce lien de consentement a expiré");
         }
 
+        if ("FERME".equals(reponse.getConsentement().getDossier().getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         if (reponse.getReponduLe() != null) {
             throw new IllegalStateException("Vous avez déjà répondu à cette demande");
         }
@@ -215,6 +223,10 @@ public class ConsentementService {
         Consentement consentement = consentementRepository.findById(consentementId)
                 .orElseThrow(() -> new ResourceNotFoundException("Consentement introuvable"));
 
+        if ("FERME".equals(consentement.getDossier().getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         // Trouver la réponse de cet héritier
         Heritier heritier = heritierRepository
                 .findByDossierIdAndUserId(consentement.getDossier().getId(), currentUser.getId())
@@ -250,6 +262,10 @@ public class ConsentementService {
     public void relancer(UUID consentementId) {
         Consentement consentement = consentementRepository.findById(consentementId)
                 .orElseThrow(() -> new ResourceNotFoundException("Consentement introuvable"));
+
+        if ("FERME".equals(consentement.getDossier().getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
 
         List<ConsentementReponse> enAttente = reponseRepository
                 .findByConsentementId(consentementId)

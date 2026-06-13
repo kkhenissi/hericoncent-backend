@@ -25,7 +25,10 @@ public class DossierService {
 
     private final DossierRepository dossierRepository;
     private final UserRepository userRepository;
+    private final ConsentementRepository consentementRepository;
     private final AuditService auditService;
+
+    private static final List<String> STATUTS_NON_FINAUX = List.of("EN_ATTENTE", "PARTIEL");
 
     @Transactional
     public DossierResponse creer(CreateDossierRequest request) {
@@ -114,6 +117,26 @@ public class DossierService {
     public DossierResponse changerStatut(UUID id, String nouveauStatut) {
         Dossier dossier = dossierRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dossier introuvable : " + id));
+
+        if ("FERME".equals(dossier.getStatut())) {
+            throw new IllegalStateException(
+                    "Le dossier est fermé, aucune modification n'est possible.");
+        }
+
+        if ("FERME".equals(nouveauStatut)) {
+            if (dossier.getHeritiers().isEmpty()) {
+                throw new IllegalStateException(
+                        "Impossible de fermer le dossier : aucun héritier n'est enregistré");
+            }
+            if (dossier.getConsentements().isEmpty()) {
+                throw new IllegalStateException(
+                        "Impossible de fermer le dossier : aucune demande de consentement n'a été créée");
+            }
+            if (consentementRepository.existsByDossierIdAndStatutIn(id, STATUTS_NON_FINAUX)) {
+                throw new IllegalStateException(
+                        "Impossible de fermer le dossier : des consentements sont encore en cours (en attente ou partiels)");
+            }
+        }
 
         String ancienStatut = dossier.getStatut();
         dossier.setStatut(nouveauStatut);

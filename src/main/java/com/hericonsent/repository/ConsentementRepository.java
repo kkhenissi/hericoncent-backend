@@ -12,4 +12,6 @@ public interface ConsentementRepository extends JpaRepository<Consentement, UUID
     List<Consentement> findByDossierId(UUID dossierId);
 
     List<Consentement> findByDossierIdAndStatut(UUID dossierId, String statut);
+
+    boolean existsByDossierIdAndStatutIn(UUID dossierId, List<String> statuts);
 }

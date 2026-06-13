@@ -37,6 +37,10 @@ public class HeritierService {
         Dossier dossier = dossierRepository.findById(dossierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dossier introuvable : " + dossierId));
 
+        if ("FERME".equals(dossier.getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         if (request.getPart() != null && request.getPart().compareTo(BigDecimal.ZERO) > 0) {
             validerSommeParts(dossierId, null, request.getPart());
         }
@@ -85,6 +89,10 @@ public class HeritierService {
         Heritier h = heritierRepository.findById(heritierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Héritier introuvable"));
 
+        if ("FERME".equals(h.getDossier().getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         if (request.getEmail() != null) {
             h.getPersonne().setEmail(request.getEmail());
         }
@@ -103,6 +111,11 @@ public class HeritierService {
     public void supprimer(UUID heritierId) {
         Heritier h = heritierRepository.findById(heritierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Héritier introuvable"));
+
+        if ("FERME".equals(h.getDossier().getStatut())) {
+            throw new IllegalStateException("Le dossier est fermé, aucune modification n'est possible.");
+        }
+
         heritierRepository.delete(h);
         auditService.log("SUPPRESSION_HERITIER", "HERITIER", heritierId, null, null);
     }
