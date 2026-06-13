@@ -7,11 +7,16 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -334,5 +339,52 @@ class FamilyTreeController {
     public ResponseEntity<ApiResponse<List<FamilyMemberResponse>>> searchMembers(
             @RequestParam String query) {
         return ResponseEntity.ok(ApiResponse.ok(familyTreeService.searchMembers(query)));
+    }
+}
+
+// ============================================
+// DOCUMENT CONTROLLER
+// ============================================
+@RestController
+@Tag(name = "Documents", description = "Upload et téléchargement de documents")
+@SecurityRequirement(name = "bearerAuth")
+@RequiredArgsConstructor
+class DocumentController {
+
+    private final DocumentService documentService;
+
+    @PostMapping("/dossiers/{dossierId}/documents")
+    @Operation(summary = "Uploader un document dans un dossier")
+    @PreAuthorize("hasAnyRole('NOTAIRE', 'ADMIN')")
+    public ResponseEntity<ApiResponse<DocumentResponse>> upload(
+            @PathVariable UUID dossierId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "typeDoc", defaultValue = "AUTRE") String typeDoc)
+            throws IOException {
+        DocumentResponse response = documentService.upload(dossierId, file, typeDoc);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Document uploadé", response));
+    }
+
+    @GetMapping("/documents/{id}/download")
+    @Operation(summary = "Télécharger un document")
+    public ResponseEntity<Resource> download(@PathVariable UUID id) throws IOException {
+        Resource resource = documentService.download(id);
+        com.hericonsent.entity.Document doc = documentService.getById(id);
+        String contentType = doc.getMimeType() != null
+                ? doc.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + doc.getNom() + "\"")
+                .body(resource);
+    }
+
+    @DeleteMapping("/documents/{id}")
+    @Operation(summary = "Supprimer un document")
+    @PreAuthorize("hasAnyRole('NOTAIRE', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> supprimer(@PathVariable UUID id) throws IOException {
+        documentService.supprimer(id);
+        return ResponseEntity.ok(ApiResponse.ok("Document supprimé", null));
     }
 }

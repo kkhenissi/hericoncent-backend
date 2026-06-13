@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +36,10 @@ public class HeritierService {
     public HeritierResponse ajouter(UUID dossierId, AddHeritierRequest request) {
         Dossier dossier = dossierRepository.findById(dossierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dossier introuvable : " + dossierId));
+
+        if (request.getPart() != null && request.getPart().compareTo(BigDecimal.ZERO) > 0) {
+            validerSommeParts(dossierId, null, request.getPart());
+        }
 
         Personne personne = Personne.builder()
                 .nom(request.getNom())
@@ -84,6 +89,7 @@ public class HeritierService {
             h.getPersonne().setEmail(request.getEmail());
         }
         if (request.getPart() != null) {
+            validerSommeParts(h.getDossier().getId(), h.getId(), request.getPart());
             h.setPart(request.getPart());
         }
 
@@ -108,6 +114,28 @@ public class HeritierService {
         h.setStatutContact(statut);
         h = heritierRepository.save(h);
         return toResponse(h);
+    }
+
+    /**
+     * Vérifie que la somme des parts du dossier ne dépasse pas 1.0 après l'ajout/modification.
+     * @param dossierId  le dossier concerné
+     * @param excludeId  l'UUID de l'héritier à exclure du calcul (null lors d'un ajout)
+     * @param nouvellePart la part à attribuer
+     */
+    private void validerSommeParts(UUID dossierId, UUID excludeId, BigDecimal nouvellePart) {
+        BigDecimal sommeExistante = heritierRepository.findByDossierId(dossierId).stream()
+                .filter(h -> excludeId == null || !h.getId().equals(excludeId))
+                .map(Heritier::getPart)
+                .filter(p -> p != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal total = sommeExistante.add(nouvellePart);
+        if (total.compareTo(BigDecimal.ONE) > 0) {
+            BigDecimal disponible = BigDecimal.ONE.subtract(sommeExistante);
+            throw new IllegalArgumentException(
+                    "La somme des parts dépasserait 100 %. Part disponible restante : "
+                    + disponible.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() + " %");
+        }
     }
 
     private HeritierResponse toResponse(Heritier h) {

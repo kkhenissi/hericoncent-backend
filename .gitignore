@@ -36,3 +36,5 @@ build/
 postgres_data/
 # Fichiers H2 (base de données locale)
 data/
+# Fichiers uploadés
+uploads/
